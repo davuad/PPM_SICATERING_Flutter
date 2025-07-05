@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> {
       });
     } else {
       setState(() {
-        page = PetugasPage();
+        page = LoginPage();
       });
     }
   }

@@ -95,7 +95,8 @@ class _MinumanDetailState extends State<MinumanDetail> {
       _isDeleting = true;
     });
 
-    bool success = await MinumanBlok.deleteMinuman(widget.minuman!.id!);
+    bool success = await MinumanBlok.deleteMinuman(id: widget.minuman!.id!);
+
 
     setState(() {
       _isDeleting = false;

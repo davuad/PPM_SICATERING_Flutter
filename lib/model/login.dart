@@ -5,9 +5,9 @@ class Login {
   int? userID;
   String? userEmail;
 
-  Login ({this.code, this.status, this.token, this.userEmail, this.userID});
+  Login({this.code, this.status, this.token, this.userEmail, this.userID});
 
-  factory Login.fromJSON(Map<String, dynamic>obj) {
+  factory Login.fromJSON(Map<String, dynamic> obj) {
     return Login(
       code: obj['code'],
       status: obj['status'],

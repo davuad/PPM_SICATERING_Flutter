@@ -36,11 +36,14 @@ class _MinumanFormState extends State<MinumanForm> {
       setState(() {
         judul = "UBAH MINUMAN";
         tombolSubmit = "UBAH";
-        _kodeMinumanTextboxController.text = widget.minuman!.kodeMinuman ?? '';
-        _namaMinumanTextboxController.text = widget.minuman!.namaMinuman ?? '';
+        _kodeMinumanTextboxController.text = widget.minuman!.kodeMinuman!;
+        _namaMinumanTextboxController.text = widget.minuman!.namaMinuman!;
         _hargaMinumanTextboxController.text =
             widget.minuman!.hargaMinuman.toString();
       });
+    } else {
+      judul = "TAMBAH MINUMAN";
+      tombolSubmit = "SIMPAN";
     }
   }
 
@@ -113,94 +116,116 @@ class _MinumanFormState extends State<MinumanForm> {
     return OutlinedButton(
       child: Text(tombolSubmit),
       onPressed: () {
-        if (_formKey.currentState!.validate() && !_isLoading) {
-          if (widget.minuman != null) {
-            ubah();
-          } else {
-            simpan();
+        var validate = _formKey.currentState!.validate();
+        if (validate) {
+          if (!_isLoading) {
+            if (widget.minuman != null) {
+              ubah();
+            } else {
+              simpan();
+            }
           }
         }
       },
     );
   }
 
-  simpan() async {
+  simpan() {
     setState(() {
       _isLoading = true;
     });
 
-    final response = await http.post(
-      Uri.parse(
-        'https://bc1c6696-936f-4f45-b6fa-92a5cf7633fb.mock.pstmn.io/minuman',
-      ),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "kodeMinuman": _kodeMinumanTextboxController.text,
-        "namaMinuman": _namaMinumanTextboxController.text,
-        "hargaMinuman": int.parse(_hargaMinumanTextboxController.text),
-      }),
-    );
+    Minuman createMinuman = Minuman(id: null);
+    createMinuman.kodeMinuman = _kodeMinumanTextboxController.text;
+    createMinuman.namaMinuman = _namaMinumanTextboxController.text;
+    createMinuman.hargaMinuman =
+        int.parse(_hargaMinumanTextboxController.text);
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (response.statusCode == 201) {
-      final data = jsonDecode(response.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? 'Berhasil menambahkan')),
-      );
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const MinumanPage()));
-    } else {
-      showDialog(
-        context: context,
-        builder:
-            (_) => const WarningDialog(
-              description: "Simpan gagal, silahkan coba lagi",
-            ),
-      );
-    }
+    MinumanBlok.addMinuman(minuman: createMinuman)
+        .then(
+          (value) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) => const MinumanPage(),
+              ),
+            );
+          },
+          onError: (error) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) => const WarningDialog(
+                description: "Simpan gagal, silahkan coba lagi",
+              ),
+            );
+          },
+        )
+        .whenComplete(() {
+          setState(() {
+            _isLoading = false;
+          });
+        });
   }
 
-  ubah() async {
+  ubah() {
     setState(() {
       _isLoading = true;
     });
 
-    final response = await http.put(
-      Uri.parse(
-        'https://bc1c6696-936f-4f45-b6fa-92a5cf7633fb.mock.pstmn.io/minuman/${widget.minuman!.id}',
-      ),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "kode_minuman": _kodeMinumanTextboxController.text,
-        "nama_minuman": _namaMinumanTextboxController.text,
-        "harga": int.parse(_hargaMinumanTextboxController.text),
-      }),
-    );
+    Minuman updateMinuman = Minuman(id: null);
+    updateMinuman.id = widget.minuman!.id;
+    updateMinuman.kodeMinuman = _kodeMinumanTextboxController.text;
+    updateMinuman.namaMinuman = _namaMinumanTextboxController.text;
+    updateMinuman.hargaMinuman =
+        int.parse(_hargaMinumanTextboxController.text);
 
-    setState(() {
-      _isLoading = false;
-    });
+    MinumanBlok.updateMinuman(minuman: updateMinuman).then(
+      (value) {
+        setState(() {
+          _isLoading = false;
+        });
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? 'Berhasil mengubah')),
-      );
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const MinumanPage()));
-    } else {
-      showDialog(
-        context: context,
-        builder:
-            (_) => const WarningDialog(
-              description: "Ubah gagal, silahkan coba lagi",
+        if (value) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) => AlertDialog(
+              title: const Text("Berhasil"),
+              content: const Text("Data berhasil diubah."),
+              actions: [
+                TextButton(
+                  child: const Text("OK"),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Tutup dialog
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (BuildContext context) => const MinumanPage(),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-      );
-    }
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) => const WarningDialog(
+              description: "Permintaan ubah data gagal, silahkan coba lagi",
+            ),
+          );
+        }
+      },
+      onError: (error) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        showDialog(
+          context: context,
+          builder: (BuildContext context) => const WarningDialog(
+            description: "Permintaan ubah data gagal, silahkan coba lagi",
+          ),
+        );
+      },
+    );
   }
 }

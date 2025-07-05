@@ -2,16 +2,16 @@ class Petugas {
   int? id;
   String? namaPetugas;
   String? jabatan;
-  int? noHp;
+  int? no_hape;
 
-  Petugas({this.id, this.namaPetugas, this.jabatan, this.noHp});
+  Petugas({this.id, this.namaPetugas, this.jabatan, this.no_hape});
 
   factory Petugas.fromJSON(Map<String, dynamic> json) {
     return Petugas(
       id: json['id'],
       namaPetugas: json['nama_petugas'], 
       jabatan: json['jabatan'],
-      noHp: json['noHp'],
+      no_hape: json['no_hape'],
     );
   }
 
@@ -20,7 +20,7 @@ class Petugas {
       'id': id,
       'nama_petugas': namaPetugas,
       'jabatan': jabatan,
-      'no_hp': noHp,
+      'no_hape': no_hape,
     };
   }
 }
