@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:catering_flutter/helpers/api.dart';
 import 'package:catering_flutter/helpers/api_url.dart';
 import 'package:catering_flutter/model/petugas.dart';
 
 class PetugasBlok {
-  // Ambil semua petugas
+  // Ambil semua data petugas
   static Future<List<Petugas>> getPetugas() async {
     final response = await http.get(Uri.parse(ApiUrl.listPetugas));
 
@@ -22,8 +23,8 @@ class PetugasBlok {
     }
   }
 
-  // Tambah petugas
-  static Future<bool> addPetugas(Petugas petugas) async {
+  // Tambah data petugas
+  static Future<bool> addPetugas({required Petugas petugas}) async {
     final response = await http.post(
       Uri.parse(ApiUrl.createPetugas),
       headers: {'Content-Type': 'application/json'},
@@ -39,25 +40,26 @@ class PetugasBlok {
     }
   }
 
-  // Ubah petugas
-  static Future<bool> updatePetugas(Petugas petugas) async {
-    final response = await http.put(
-      Uri.parse(ApiUrl.updatePetugas(petugas.id!)),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(petugas.toJson()),
-    );
+  // Ubah data petugas
+  static Future<bool> updatePetugas({required Petugas petugas}) async {
+    String apiUrl = ApiUrl.updatePetugas(petugas.id!);
 
-    if (response.statusCode == 200) {
-      final jsonObj = json.decode(response.body);
-      return jsonObj['status'] == true;
-    } else {
-      print('Error updatePetugas: ${response.body}');
-      return false;
-    }
+    var body = {
+      "nama_petugas": petugas.namaPetugas,
+      "jabatan": petugas.jabatan,
+      "no_hape": petugas.no_hape.toString(),
+    };
+
+    var response = await Api().put(apiUrl, body);
+    var jsonObj = json.decode(response.body);
+
+    print('Respon Update Petugas: $jsonObj');
+
+    return jsonObj['status'] == true;
   }
 
-  // Hapus petugas
-  static Future<bool> deletePetugas(int id) async {
+  // Hapus data petugas
+  static Future<bool> deletePetugas({required int id}) async {
     final response = await http.delete(Uri.parse(ApiUrl.deletePetugas(id)));
 
     if (response.statusCode == 200) {
@@ -69,7 +71,7 @@ class PetugasBlok {
     }
   }
 
-  // Detail petugas (opsional)
+  // Ambil detail petugas berdasarkan ID (opsional)
   static Future<Petugas> showPetugas(int id) async {
     final response = await http.get(Uri.parse(ApiUrl.showPetugas(id)));
 
@@ -77,7 +79,7 @@ class PetugasBlok {
       final jsonObj = json.decode(response.body);
       return Petugas.fromJSON(jsonObj['data']);
     } else {
-      throw Exception('Gagal memuat detail petugas');
+      throw Exception('Gagal mengambil data petugas dengan ID $id');
     }
   }
 }

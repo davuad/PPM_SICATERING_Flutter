@@ -144,7 +144,7 @@ class ItemPetugas extends StatelessWidget {
         child: ListTile(
           title: Text(petugas.namaPetugas ?? ''),
           subtitle: Text(
-            'Jabatan: ${petugas.jabatan ?? ''} - No HP: ${petugas.noHp}',
+            'Jabatan: ${petugas.jabatan ?? ''} - No HP: ${petugas.no_hape}',
           ),
         ),
       ),

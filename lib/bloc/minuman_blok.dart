@@ -1,83 +1,79 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+
+import 'package:catering_flutter/helpers/api.dart';
 import 'package:catering_flutter/helpers/api_url.dart';
 import 'package:catering_flutter/model/minuman.dart';
 
 class MinumanBlok {
-  // Ambil semua minuman
+  // Ambil semua data minuman
   static Future<List<Minuman>> getMinuman() async {
-    final response = await http.get(Uri.parse(ApiUrl.listMinuman));
+    String apiUrl = ApiUrl.listMinuman;
+    var response = await Api().get(apiUrl);
 
-    if (response.statusCode == 200) {
-      // Decode JSON
-      final Map<String, dynamic> jsonResponse = json.decode(response.body);
+    var jsonObj = json.decode(response.body);
+    List<dynamic> listMinuman = (jsonObj as Map<String, dynamic>)['data'];
 
-      // Ambil List dari field "data"
-      List<dynamic> dataList = jsonResponse['data'];
-
-      // Map ke List<Minuman>
-      return dataList.map((item) => Minuman.fromJSON(item)).toList();
-    } else {
-      throw Exception('Gagal memuat data minuman: ${response.statusCode}');
+    List<Minuman> minumans = [];
+    for (int i = 0; i < listMinuman.length; i++) {
+      minumans.add(Minuman.fromJSON(listMinuman[i]));
     }
+    return minumans;
   }
 
-  // Tambah minuman
-  static Future<bool> addMinuman(Minuman minuman) async {
-    final response = await http.post(
-      Uri.parse(ApiUrl.createMinuman),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(minuman.toJson()),
-    );
+  // Tambah data minuman
+  static Future<bool> addMinuman({required Minuman minuman}) async {
+    String apiUrl = ApiUrl.createMinuman;
 
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      final jsonObj = json.decode(response.body);
-      return jsonObj['status'] == true;
-    } else {
-      print('Error addMinuman: ${response.body}');
-      return false;
-    }
+    var body = {
+      "kode_minuman": minuman.kodeMinuman,
+      "nama_minuman": minuman.namaMinuman,
+      "harga": minuman.hargaMinuman.toString(),
+    };
+
+    var response = await Api().post(apiUrl, body);
+    var jsonObj = json.decode(response.body);
+
+    return jsonObj['status'] == true;
   }
 
-  // Ubah minuman
-  static Future<bool> updateMinuman(Minuman minuman) async {
-    final response = await http.put(
-      Uri.parse(ApiUrl.updateMinuman(minuman.id!)),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(minuman.toJson()),
-    );
+  // Ubah data minuman
+  static Future<bool> updateMinuman({required Minuman minuman}) async {
+    String apiUrl = ApiUrl.updateMinuman(minuman.id!);
 
-    if (response.statusCode == 200) {
-      final jsonObj = json.decode(response.body);
-      return jsonObj['status'] == true;
-    } else {
-      print('Error updateMinuman: ${response.body}');
-      return false;
-    }
+    var body = {
+      "kode_minuman": minuman.kodeMinuman,
+      "nama_minuman": minuman.namaMinuman,
+      "harga": minuman.hargaMinuman.toString(),
+    };
+
+    var response = await Api().put(apiUrl, body);
+    var jsonObj = json.decode(response.body);
+
+    print('Respon Update: $jsonObj');
+
+    return jsonObj['status'] == true;
   }
 
-  // Hapus minuman
-  static Future<bool> deleteMinuman(int id) async {
-    final response = await http.delete(Uri.parse(ApiUrl.deleteMinuman(id)));
+  // Hapus data minuman
+  static Future<bool> deleteMinuman({required int id}) async {
+    String apiUrl = ApiUrl.deleteMinuman(id);
 
-    if (response.statusCode == 200) {
-      final jsonObj = json.decode(response.body);
-      return jsonObj['status'] == true;
-    } else {
-      print('Error deleteMinuman: ${response.body}');
-      return false;
-    }
+    var response = await Api().delete(apiUrl);
+    var jsonObj = json.decode(response.body);
+
+    return jsonObj['status'] == true;
   }
 
-  // Detail minuman (opsional)
+  // Ambil detail minuman berdasarkan ID (opsional tambahan)
   static Future<Minuman> showMinuman(int id) async {
-    final response = await http.get(Uri.parse(ApiUrl.showMinuman(id)));
+    String apiUrl = ApiUrl.showMinuman(id);
+    var response = await Api().get(apiUrl);
 
     if (response.statusCode == 200) {
-      final jsonObj = json.decode(response.body);
+      var jsonObj = json.decode(response.body);
       return Minuman.fromJSON(jsonObj['data']);
     } else {
-      throw Exception('Gagal memuat detail minuman');
+      throw Exception('Gagal mengambil data minuman dengan ID $id');
     }
   }
 }

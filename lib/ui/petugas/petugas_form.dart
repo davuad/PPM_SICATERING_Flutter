@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:catering_flutter/bloc/petugas_blok.dart';
 import 'package:catering_flutter/model/petugas.dart';
 import 'package:catering_flutter/ui/petugas/petugas_page.dart';
 import 'package:catering_flutter/widget/warning_dialog.dart';
@@ -16,30 +15,39 @@ class PetugasForm extends StatefulWidget {
 
 class _PetugasFormState extends State<PetugasForm> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _namaController = TextEditingController();
-  final TextEditingController _jabatanController = TextEditingController();
-  final TextEditingController _noHpController = TextEditingController();
-
-  String _judul = "TAMBAH PETUGAS";
-  String _tombol = "SIMPAN";
   bool _isLoading = false;
+  String judul = "TAMBAH PETUGAS";
+  String tombolSubmit = "SIMPAN";
+
+  final _namaController = TextEditingController();
+  final _jabatanController = TextEditingController();
+  final _no_hapeController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    isUpdate();
+  }
+
+  isUpdate() {
     if (widget.petugas != null) {
-      _judul = "UBAH PETUGAS";
-      _tombol = "UBAH";
-      _namaController.text = widget.petugas!.namaPetugas ?? '';
-      _jabatanController.text = widget.petugas!.jabatan ?? '';
-      _noHpController.text = widget.petugas!.noHp.toString();
+      setState(() {
+        judul = "UBAH PETUGAS";
+        tombolSubmit = "UBAH";
+        _namaController.text = widget.petugas!.namaPetugas ?? '';
+        _jabatanController.text = widget.petugas!.jabatan ?? '';
+        _no_hapeController.text = widget.petugas!.no_hape.toString();
+      });
+    } else {
+      judul = "TAMBAH PETUGAS";
+      tombolSubmit = "SIMPAN";
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_judul)),
+      appBar: AppBar(title: Text(judul)),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(8),
@@ -49,8 +57,8 @@ class _PetugasFormState extends State<PetugasForm> {
               children: [
                 _buildNamaField(),
                 _buildJabatanField(),
-                _buildNoHpField(),
-                _buildSubmitButton(),
+                _buildno_hapeField(),
+                _buttonSubmit(),
               ],
             ),
           ),
@@ -71,14 +79,13 @@ class _PetugasFormState extends State<PetugasForm> {
     return TextFormField(
       controller: _jabatanController,
       decoration: const InputDecoration(labelText: "Jabatan"),
-      validator:
-          (value) => value!.isEmpty ? "Jabatan tidak boleh kosong" : null,
+      validator: (value) => value!.isEmpty ? "Jabatan tidak boleh kosong" : null,
     );
   }
 
-  Widget _buildNoHpField() {
+  Widget _buildno_hapeField() {
     return TextFormField(
-      controller: _noHpController,
+      controller: _no_hapeController,
       decoration: const InputDecoration(labelText: "No HP"),
       keyboardType: TextInputType.phone,
       validator: (value) {
@@ -89,88 +96,106 @@ class _PetugasFormState extends State<PetugasForm> {
     );
   }
 
-  Widget _buildSubmitButton() {
+  Widget _buttonSubmit() {
     return OutlinedButton(
-      child: Text(_tombol),
+      child: Text(tombolSubmit),
       onPressed: () {
-        if (_formKey.currentState!.validate() && !_isLoading) {
-          widget.petugas != null ? _ubah() : _simpan();
+        var validate = _formKey.currentState!.validate();
+        if (validate) {
+          if (!_isLoading) {
+            widget.petugas != null ? _ubah() : _simpan();
+          }
         }
       },
     );
   }
 
-  Future<void> _simpan() async {
+  void _simpan() {
     setState(() => _isLoading = true);
 
-    final response = await http.post(
-      Uri.parse(
-        'https://bc1c6696-936f-4f45-b6fa-92a5cf7633fb.mock.pstmn.io/petugas',
-      ),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "namaPetugas": _namaController.text,
-        "jabatan": _jabatanController.text,
-        "noHp": int.parse(_noHpController.text),
-      }),
-    );
+    Petugas createPetugas = Petugas(id: null);
+    createPetugas.namaPetugas = _namaController.text;
+    createPetugas.jabatan = _jabatanController.text;
+    createPetugas.no_hape = int.parse(_no_hapeController.text);
 
-    setState(() => _isLoading = false);
-
-    if (response.statusCode == 201) {
-      final data = jsonDecode(response.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? 'Berhasil menambahkan')),
-      );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PetugasPage()),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder:
-            (_) => const WarningDialog(
+    PetugasBlok.addPetugas(petugas: createPetugas).then(
+      (value) {
+        if (value) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const PetugasPage()),
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (_) => const WarningDialog(
               description: "Simpan gagal, silakan coba lagi.",
             ),
-      );
-    }
+          );
+        }
+      },
+      onError: (error) {
+        showDialog(
+          context: context,
+          builder: (_) => const WarningDialog(
+            description: "Simpan gagal, silakan coba lagi.",
+          ),
+        );
+      },
+    ).whenComplete(() {
+      setState(() => _isLoading = false);
+    });
   }
 
-  Future<void> _ubah() async {
+  void _ubah() {
     setState(() => _isLoading = true);
 
-    final response = await http.put(
-      Uri.parse(
-        'https://bc1c6696-936f-4f45-b6fa-92a5cf7633fb.mock.pstmn.io/petugas/${widget.petugas!.id}',
-      ),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "namaPetugas": _namaController.text,
-        "jabatan": _jabatanController.text,
-        "noHp": int.parse(_noHpController.text),
-      }),
-    );
+    Petugas updatePetugas = Petugas(id: widget.petugas!.id);
+    updatePetugas.namaPetugas = _namaController.text;
+    updatePetugas.jabatan = _jabatanController.text;
+    updatePetugas.no_hape = int.parse(_no_hapeController.text);
 
-    setState(() => _isLoading = false);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? 'Berhasil mengubah')),
-      );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PetugasPage()),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder:
-            (_) => const WarningDialog(
+    PetugasBlok.updatePetugas(petugas: updatePetugas).then(
+      (value) {
+        if (value) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Berhasil"),
+              content: const Text("Data berhasil diubah."),
+              actions: [
+                TextButton(
+                  child: const Text("OK"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => const PetugasPage(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (_) => const WarningDialog(
               description: "Ubah gagal, silakan coba lagi.",
             ),
-      );
-    }
+          );
+        }
+      },
+      onError: (error) {
+        showDialog(
+          context: context,
+          builder: (_) => const WarningDialog(
+            description: "Ubah gagal, silakan coba lagi.",
+          ),
+        );
+      },
+    ).whenComplete(() {
+      setState(() => _isLoading = false);
+    });
   }
 }

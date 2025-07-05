@@ -35,7 +35,7 @@ class _PetugasDetailState extends State<PetugasDetail> {
             ),
             const SizedBox(height: 8),
             Text(
-              "No HP: ${widget.petugas.noHp}",
+              "No HP: ${widget.petugas.no_hape}",
               style: const TextStyle(fontSize: 18.0),
             ),
             const SizedBox(height: 20),
@@ -94,7 +94,7 @@ class _PetugasDetailState extends State<PetugasDetail> {
   }
 
   Future<void> _hapus() async {
-    bool success = await PetugasBlok.deletePetugas(widget.petugas.id!);
+    bool success = await PetugasBlok.deletePetugas(id: widget.petugas.id!);
 
     if (success) {
       ScaffoldMessenger.of(
