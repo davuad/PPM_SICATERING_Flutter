@@ -35,6 +35,25 @@ class Api {
     return responseJson;
   }
 
+  Future<dynamic> put(dynamic url, dynamic data) async {
+    var token = await UserInfo().getToken();
+    var responseJson;
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          HttpHeaders.authorizationHeader: "Bearer $token",
+          "Content-Type": "application/x-www-form-urlencoded", // Tambahkan ini!
+        },
+        body: data,
+      );
+      responseJson = _returnResponse(response);
+    } on SocketException {
+      throw FetchDataException('No Internet connection');
+    }
+    return responseJson;
+  }
+
   Future<dynamic> delete(dynamic url) async {
     var token = await UserInfo().getToken();
     var responseJson;

@@ -1,7 +1,6 @@
 class ApiUrl {
   // Base URL mock server Postman
-  static const String baseUrl =
-      'https://bc1c6696-936f-4f45-b6fa-92a5cf7633fb.mock.pstmn.io';
+  static const String baseUrl = 'http://127.0.0.1:8080';
 
   // AUTH
   static const String registrasi = '$baseUrl/registrasi';
@@ -20,7 +19,7 @@ class ApiUrl {
   // MINUMAN
   // ========================
   static const String listMinuman = '$baseUrl/minuman';
-  static const String createMinuman = '$baseUrl/minuman';
+  static const String createMinuman = '$baseUrl/minuman/';
   static String showMinuman(int id) => '$baseUrl/minuman/$id';
   static String updateMinuman(int id) => '$baseUrl/minuman/$id';
   static String deleteMinuman(int id) => '$baseUrl/minuman/$id';

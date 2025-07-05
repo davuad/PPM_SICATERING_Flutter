@@ -6,19 +6,21 @@ import 'package:catering_flutter/bloc/makanan_blok.dart';
 import 'package:catering_flutter/widget/warning_dialog.dart';
 
 class MakananDetail extends StatefulWidget {
-  Makanan? makanan;
+  final Makanan? makanan;
 
-  MakananDetail({Key? key, this.makanan}) : super(key: key);
+  const MakananDetail({Key? key, this.makanan}) : super(key: key);
 
   @override
   _MakananDetailState createState() => _MakananDetailState();
 }
 
 class _MakananDetailState extends State<MakananDetail> {
-  bool _isDeleting = false;
-
   @override
   Widget build(BuildContext context) {
+    if (widget.makanan == null) {
+      return const Scaffold(body: Center(child: Text("Data tidak ditemukan.")));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Detail Makanan')),
       body: Center(
@@ -57,63 +59,72 @@ class _MakananDetailState extends State<MakananDetail> {
               MaterialPageRoute(
                 builder: (context) => MakananForm(makanan: widget.makanan!),
               ),
-            ).then((_) => setState(() {})); // Refresh setelah edit
+            ).then((_) => setState(() {}));
           },
         ),
         const SizedBox(width: 10),
         OutlinedButton(
           child: const Text("DELETE"),
-          onPressed: () => confirmHapus(),
+          onPressed: () => _confirmHapus(),
         ),
       ],
     );
   }
 
-  void confirmHapus() {
-    AlertDialog alertDialog = AlertDialog(
-      content: const Text("Yakin ingin menghapus data ini?"),
-      actions: [
-        OutlinedButton(
-          child: const Text("Ya"),
-          onPressed: () async {
-            Navigator.pop(context); // Tutup dialog
-            await hapusMakanan();
-          },
-        ),
-        OutlinedButton(
-          child: const Text("Batal"),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
+  void _confirmHapus() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            content: const Text("Yakin ingin menghapus data ini?"),
+            actions: [
+              OutlinedButton(
+                child: const Text("Ya"),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _hapusMakanan();
+                },
+              ),
+              OutlinedButton(
+                child: const Text("Batal"),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
     );
-
-    showDialog(context: context, builder: (context) => alertDialog);
   }
 
-  Future<void> hapusMakanan() async {
-    setState(() {
-      _isDeleting = true;
-    });
-
-    bool success = await MakananBlok.deleteMakanan(widget.makanan!.id!);
-
-    setState(() {
-      _isDeleting = false;
-    });
+  Future<void> _hapusMakanan() async {
+    final success = await MakananBlok.deleteMakanan(id: widget.makanan!.id!);
 
     if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Data berhasil dihapus")));
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const MakananPage()));
+      showDialog(
+        context: context,
+        builder:
+            (BuildContext context) => AlertDialog(
+              title: const Text("Berhasil"),
+              content: const Text("Makanan berhasil dihapus."),
+              actions: [
+                TextButton(
+                  child: const Text("OK"),
+                  onPressed: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const MakananPage(),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                ),
+              ],
+            ),
+      );
     } else {
       showDialog(
         context: context,
         builder:
-            (_) => const WarningDialog(
-              description: "Hapus gagal, silakan coba lagi",
+            (context) => const WarningDialog(
+              description: "Gagal menghapus makanan, silakan coba lagi.",
             ),
       );
     }

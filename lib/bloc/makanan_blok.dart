@@ -1,72 +1,77 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+
+import 'package:catering_flutter/helpers/api.dart';
 import 'package:catering_flutter/helpers/api_url.dart';
 import 'package:catering_flutter/model/makanan.dart';
 
 class MakananBlok {
+  // Ambil semua data makanan
   static Future<List<Makanan>> getMakanan() async {
-    final response = await http.get(Uri.parse(ApiUrl.listMakanan));
+    String apiUrl = ApiUrl.listMakanan;
+    var response = await Api().get(apiUrl);
 
-    if (response.statusCode == 200) {
-      // Decode JSON
-      final Map<String, dynamic> jsonResponse = json.decode(response.body);
+    var jsonObj = json.decode(response.body);
+    List<dynamic> listMakanan = (jsonObj as Map<String, dynamic>)['data'];
 
-      // Ambil List dari field "data"
-      List<dynamic> dataList = jsonResponse['data'];
-
-      // Map ke List<Makanan>
-      return dataList.map((item) => Makanan.fromJSON(item)).toList();
-    } else {
-      throw Exception('Gagal memuat data makanan: ${response.statusCode}');
+    List<Makanan> makanans = [];
+    for (int i = 0; i < listMakanan.length; i++) {
+      makanans.add(Makanan.fromJSON(listMakanan[i]));
     }
+    return makanans;
   }
 
-  static Future<bool> addMakanan(Makanan makanan) async {
-    final response = await http.post(
-      Uri.parse(ApiUrl.createMakanan),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(makanan.toJson()),
-    );
+  // Tambah data makanan
+  static Future<bool> addMakanan({required Makanan makanan}) async {
+    String apiUrl = ApiUrl.createMakanan;
 
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      return true;
-    } else {
-      print('Error createMakanan: ${response.body}');
-      return false;
-    }
+    var body = {
+      "kode_makanan": makanan.kodeMakanan,
+      "nama_makanan": makanan.namaMakanan,
+      "harga": makanan.hargaMakanan.toString(),
+    };
+
+    var response = await Api().post(apiUrl, body);
+    var jsonObj = json.decode(response.body);
+
+    return jsonObj['status'] == true;
   }
 
-  static Future<bool> updateMakanan(Makanan makanan) async {
-    final response = await http.put(
-      Uri.parse(ApiUrl.updateMakanan(makanan.id!)),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(makanan.toJson()),
-    );
+  // Ubah data makanan
+  static Future<bool> updateMakanan({required Makanan makanan}) async {
+    String apiUrl = ApiUrl.updateMakanan(makanan.id!);
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      print('Error updateMakanan: ${response.body}');
-      return false;
-    }
+    var body = {
+      "kode_makanan": makanan.kodeMakanan,
+      "nama_makanan": makanan.namaMakanan,
+      "harga": makanan.hargaMakanan.toString(),
+    };
+
+    var response = await Api().put(apiUrl, body); // PUT method
+    var jsonObj = json.decode(response.body);
+
+    print('Respon Update: $jsonObj');
+
+    return jsonObj['status'] == true;
   }
 
-  static Future<bool> deleteMakanan(int id) async {
-    final response = await http.delete(Uri.parse(ApiUrl.deleteMakanan(id)));
+  // Hapus data makanan
+  static Future<bool> deleteMakanan({required int id}) async {
+    String apiUrl = ApiUrl.deleteMakanan(id);
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      print('Error deleteMakanan: ${response.body}');
-      return false;
-    }
+    var response = await Api().delete(apiUrl);
+    var jsonObj = json.decode(response.body);
+
+    return jsonObj['status'] == true;
   }
 
+  // Ambil detail makanan berdasarkan ID (opsional tambahan)
   static Future<Makanan> showMakanan(int id) async {
-    final response = await http.get(Uri.parse(ApiUrl.showMakanan(id)));
+    String apiUrl = ApiUrl.showMakanan(id);
+    var response = await Api().get(apiUrl);
 
     if (response.statusCode == 200) {
-      return Makanan.fromJSON(json.decode(response.body));
+      var jsonObj = json.decode(response.body);
+      return Makanan.fromJSON(jsonObj['data']);
     } else {
       throw Exception('Gagal mengambil data makanan dengan ID $id');
     }

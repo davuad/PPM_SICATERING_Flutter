@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class Registasi {
   int? code;
   bool? status;

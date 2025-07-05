@@ -10,20 +10,10 @@ class Makanan {
 
    factory Makanan.fromJSON(Map<String, dynamic> json) {
     return Makanan(
-      id: json['id'],
+      id: int.tryParse(json['id'].toString()),
       kodeMakanan: json['kode_makanan'],
       namaMakanan: json['nama_makanan'],
-      hargaMakanan: (json['harga'] as num?)?.toInt(),
+      hargaMakanan: int.tryParse(json['harga'].toString()),
     );
-  }
-
-   // Konversi dari objek Makanan ke JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'kode_makanan': kodeMakanan,
-      'nama_makanan': namaMakanan,
-      'harga': hargaMakanan,
-    };
   }
 }

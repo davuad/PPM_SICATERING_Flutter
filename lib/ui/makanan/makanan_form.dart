@@ -130,83 +130,106 @@ class _MakananFormState extends State<MakananForm> {
     );
   }
 
-  simpan() async {
+   simpan() {
     setState(() {
       _isLoading = true;
     });
 
-    final response = await http.post(
-      Uri.parse(
-        'https://bc1c6696-936f-4f45-b6fa-92a5cf7633fb.mock.pstmn.io/makanan',
-      ), // GANTI dengan URL mock kamu
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "kodeMakanan": _kodeMakananTextboxController.text,
-        "namaMakanan": _namaMakananTextboxController.text,
-        "hargaMakanan": int.parse(_hargaMakananTextboxController.text),
-      }),
-    );
+    Makanan createMakanan = Makanan(id: null);
+    createMakanan.kodeMakanan = _kodeMakananTextboxController.text;
+    createMakanan.namaMakanan = _namaMakananTextboxController.text;
+    createMakanan.hargaMakanan = int.parse(_hargaMakananTextboxController.text);
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (response.statusCode == 201) {
-      final data = jsonDecode(response.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? 'Berhasil menambahkan')),
-      );
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const MakananPage()));
-    } else {
-      showDialog(
-        context: context,
-        builder:
-            (_) => const WarningDialog(
-              description: "Simpan gagal, silahkan coba lagi",
-            ),
-      );
-    }
+    MakananBlok.addMakanan(makanan: createMakanan)
+        .then(
+          (value) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) => const MakananPage(),
+              ),
+            );
+          },
+          onError: (error) {
+            showDialog(
+              context: context,
+              builder:
+                  (BuildContext context) => const WarningDialog(
+                    description: "Simpan gagal, silahkan coba lagi",
+                  ),
+            );
+          },
+        )
+        .whenComplete(() {
+          setState(() {
+            _isLoading = false;
+          });
+        });
   }
 
-  ubah() async {
+
+  ubah() {
     setState(() {
       _isLoading = true;
     });
 
-    final response = await http.put(
-      Uri.parse(
-        'https://bc1c6696-936f-4f45-b6fa-92a5cf7633fb.mock.pstmn.io/makanan/${widget.makanan!.id}',
-      ),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "kode_makanan": _kodeMakananTextboxController.text,
-        "nama_makanan": _namaMakananTextboxController.text,
-        "harga": int.parse(_hargaMakananTextboxController.text),
-      }),
+    Makanan updateMakanan = Makanan(id: null);
+    updateMakanan.id = widget.makanan!.id;
+    updateMakanan.kodeMakanan = _kodeMakananTextboxController.text;
+    updateMakanan.namaMakanan = _namaMakananTextboxController.text;
+    updateMakanan.hargaMakanan = int.parse(_hargaMakananTextboxController.text);
+
+    MakananBlok.updateMakanan(makanan: updateMakanan).then(
+      (value) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (value) {
+          showDialog(
+            context: context,
+            builder:
+                (BuildContext context) => AlertDialog(
+                  title: const Text("Berhasil"),
+                  content: const Text("Data berhasil diubah."),
+                  actions: [
+                    TextButton(
+                      child: const Text("OK"),
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Tutup dialog
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder:
+                                (BuildContext context) => const MakananPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder:
+                (BuildContext context) => const WarningDialog(
+                  description: "Permintaan ubah data gagal, silahkan coba lagi",
+                ),
+          );
+        }
+      },
+      onError: (error) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        showDialog(
+          context: context,
+          builder:
+              (BuildContext context) => const WarningDialog(
+                description: "Permintaan ubah data gagal, silahkan coba lagi",
+              ),
+        );
+      },
     );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? 'Berhasil mengubah')),
-      );
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const MakananPage()));
-    } else {
-      showDialog(
-        context: context,
-        builder:
-            (_) => const WarningDialog(
-              description: "Ubah gagal, silahkan coba lagi",
-            ),
-      );
-    }
   }
 }

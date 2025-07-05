@@ -16,8 +16,15 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  final _emailTextboxController = TextEditingController();
-  final _passwordTextboxController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +32,42 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(title: const Text('Login')),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
             child: Column(
               children: [
-                _emailTextField(),
-                _passwordTextField(),
-                _buttonLogin(),
+                _buildTextField(
+                  label: "Email",
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Email harus diisi';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  label: "Password",
+                  controller: _passwordController,
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Password harus diisi";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton(
+                      onPressed: _submit,
+                      child: const Text("Login"),
+                    ),
                 const SizedBox(height: 30),
-                _menuRegistrasi(),
+                _buildRegisterMenu(),
               ],
             ),
           ),
@@ -43,91 +76,65 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _emailTextField() {
-    return TextFormField(
-      decoration: const InputDecoration(labelText: "Email"),
-      keyboardType: TextInputType.emailAddress,
-      controller: _emailTextboxController,
-      validator: (value) {
-        if (value!.isEmpty) {
-          return 'Email harus diisi';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _passwordTextField() {
-    return TextFormField(
-      decoration: const InputDecoration(labelText: "Password"),
-      keyboardType: TextInputType.text,
-      obscureText: true,
-      controller: _passwordTextboxController,
-      validator: (value) {
-        if (value!.isEmpty) {
-          return "Password harus diisi";
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buttonLogin() {
-    return ElevatedButton(
-      child:
-          _isLoading
-              ? const CircularProgressIndicator(color: Colors.white)
-              : const Text("Login"),
-      onPressed: () {
-        var validate = _formKey.currentState!.validate();
-        if (validate) {
-          if (!_isLoading) _submit();
-        }
-      },
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(labelText: label),
+        validator: validator,
+      ),
     );
   }
 
   void _submit() {
-    _formKey.currentState!.save();
-    setState(() {
-      _isLoading = true;
-    });
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
 
     LoginBloc.login(
-          email: _emailTextboxController.text,
-          password: _passwordTextboxController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
         )
-        .then(
-          (value) async {
-            await UserInfo().setToken(value.token.toString());
-            await UserInfo().setUserID(int.parse(value.userID.toString()));
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => MakananPage()),
-            );
-          },
-          onError: (error) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder:
-                  (BuildContext context) => const WarningDialog(
-                    description: "Login gagal, silahkan coba lagi",
-                  ),
-            );
-          },
-        )
+        .then((value) async {
+          await UserInfo().setToken(value.token.toString());
+          await UserInfo().setUserID(int.parse(value.userID.toString()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MakananPage()),
+          );
+        })
+        .catchError((error) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder:
+                (_) => WarningDialog(
+                  description: error.toString(),
+                  okClick: () => Navigator.pop(context, '/login'),
+                ),
+          );
+        })
         .whenComplete(() {
-          setState(() {
-            _isLoading = false;
-          });
+          setState(() => _isLoading = false);
         });
   }
 
-  Widget _menuRegistrasi() {
+  Widget _buildRegisterMenu() {
     return Center(
       child: InkWell(
-        child: const Text("Registrasi", style: TextStyle(color: Colors.blue)),
+        child: const Text(
+          "Belum punya akun? Registrasi",
+          style: TextStyle(color: Colors.blue),
+        ),
         onTap: () {
           Navigator.push(
             context,
